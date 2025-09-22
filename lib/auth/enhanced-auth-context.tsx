@@ -2,7 +2,7 @@
 
 import type React from "react"
 import { createContext, useContext, useEffect, useState } from "react"
-import { type User, UserRole, MockDatabase } from "@/lib/types/database"
+import { type User, UserRole, UserStatus, MockDatabase } from "@/lib/types/database"
 
 interface AuthContextType {
   user: User | null
@@ -31,7 +31,7 @@ export function EnhancedAuthProvider({ children }: { children: React.ReactNode }
         const userData = JSON.parse(storedUser)
         // Verify user still exists in database
         const currentUser = MockDatabase.findUserById(userData.id)
-        if (currentUser && currentUser.status === "active") {
+        if (currentUser && currentUser.status === UserStatus.ACTIVE) {
           setUser(currentUser)
         } else {
           localStorage.removeItem("floravitalis-user")
@@ -55,7 +55,7 @@ export function EnhancedAuthProvider({ children }: { children: React.ReactNode }
         return { success: false, error: "Senha incorreta" }
       }
 
-      if (foundUser.status !== "active") {
+      if (foundUser.status !== UserStatus.ACTIVE) {
         return { success: false, error: "Usuário inativo ou suspenso" }
       }
 
