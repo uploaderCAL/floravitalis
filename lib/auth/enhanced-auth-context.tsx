@@ -24,54 +24,73 @@ export function EnhancedAuthProvider({ children }: { children: React.ReactNode }
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
+    console.log("[v0] Auth provider initializing...")
     // Check for stored session
     const storedUser = localStorage.getItem("floravitalis-user")
     if (storedUser) {
       try {
         const userData = JSON.parse(storedUser)
+        console.log("[v0] Found stored user:", userData.email)
         // Verify user still exists in database
         const currentUser = MockDatabase.findUserById(userData.id)
         if (currentUser && currentUser.status === UserStatus.ACTIVE) {
+          console.log("[v0] User verified and active")
           setUser(currentUser)
         } else {
+          console.log("[v0] User not found or inactive, clearing storage")
           localStorage.removeItem("floravitalis-user")
         }
       } catch (error) {
+        console.log("[v0] Error parsing stored user:", error)
         localStorage.removeItem("floravitalis-user")
       }
     }
     setIsLoading(false)
+    console.log("[v0] Auth provider initialized")
   }, [])
 
   const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    console.log("[v0] Login attempt for:", email)
+
     try {
+      console.log("[v0] Searching for user in database...")
       const foundUser = MockDatabase.findUserByEmail(email)
+      console.log("[v0] User found:", foundUser ? foundUser.email : "not found")
 
       if (!foundUser) {
+        console.log("[v0] User not found in database")
         return { success: false, error: "Usuário não encontrado" }
       }
 
+      console.log("[v0] Checking password...")
       if (foundUser.password !== password) {
+        console.log("[v0] Password mismatch")
         return { success: false, error: "Senha incorreta" }
       }
 
+      console.log("[v0] Checking user status:", foundUser.status)
       if (foundUser.status !== UserStatus.ACTIVE) {
+        console.log("[v0] User not active")
         return { success: false, error: "Usuário inativo ou suspenso" }
       }
 
+      console.log("[v0] Login successful, updating user data...")
       // Update last login
       foundUser.lastLogin = new Date()
 
       setUser(foundUser)
       localStorage.setItem("floravitalis-user", JSON.stringify(foundUser))
 
+      console.log("[v0] Login completed successfully")
       return { success: true }
     } catch (error) {
+      console.error("[v0] Login error:", error)
       return { success: false, error: "Erro interno do servidor" }
     }
   }
 
   const logout = () => {
+    console.log("[v0] Logging out user")
     setUser(null)
     localStorage.removeItem("floravitalis-user")
   }
