@@ -17,17 +17,24 @@ export default function AdminLoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    console.log("[v0] Form submitted with:", { email, password: password ? "***" : "empty" })
     setError("")
     setIsLoading(true)
 
     try {
+      console.log("[v0] Calling login function...")
       const result = await login(email, password)
+      console.log("[v0] Login result:", result)
+
       if (result.success) {
+        console.log("[v0] Login successful, redirecting to admin...")
         router.push("/admin")
       } else {
+        console.log("[v0] Login failed:", result.error)
         setError(result.error || "Erro ao fazer login")
       }
     } catch (err) {
+      console.error("[v0] Login exception:", err)
       setError("Erro interno do servidor")
     } finally {
       setIsLoading(false)
