@@ -3,7 +3,7 @@ import type { Metadata } from "next"
 import { Space_Grotesk, DM_Sans } from "next/font/google"
 import "./globals.css"
 import { CartProvider } from "@/lib/cart-context"
-import { AuthProvider } from "@/lib/auth/auth-context"
+import { EnhancedAuthProvider } from "@/lib/auth/enhanced-auth-context"
 import { StructuredData } from "@/components/seo/structured-data"
 import { Analytics } from "@/components/seo/analytics"
 import { generateOrganizationSchema } from "@/lib/seo/structured-data"
@@ -48,9 +48,9 @@ html {
         <Suspense>
           <StructuredData data={generateOrganizationSchema()} />
 
-          <AuthProvider>
+          <EnhancedAuthProvider>
             <CartProvider>{children}</CartProvider>
-          </AuthProvider>
+          </EnhancedAuthProvider>
 
           <Analytics gaId={process.env.NEXT_PUBLIC_GA4_ID} metaPixelId={process.env.NEXT_PUBLIC_META_PIXEL_ID} />
         </Suspense>

@@ -6,6 +6,8 @@ import HeroCarousel from "@/components/hero-carousel"
 import Link from "next/link"
 import { Star, Truck, Shield, Award, ArrowRight } from "lucide-react"
 import { useEffect, useState } from "react"
+import { mockDatabase } from "@/lib/data/mock-database"
+import type { Product } from "@/lib/types/database"
 
 interface CarouselImage {
   id: string
@@ -22,6 +24,7 @@ export default function HomePage() {
   const [carouselTransition, setCarouselTransition] = useState<"fade" | "slide" | "zoom">("fade")
   const [carouselAutoPlay, setCarouselAutoPlay] = useState(true)
   const [carouselInterval, setCarouselInterval] = useState(5000)
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([])
 
   useEffect(() => {
     const savedImages = localStorage.getItem("carousel-images")
@@ -81,40 +84,12 @@ export default function HomePage() {
     if (savedInterval) {
       setCarouselInterval(Number.parseInt(savedInterval))
     }
-  }, [])
 
-  const featuredProducts = [
-    {
-      id: 1,
-      slug: "creatina-monohidratada-300g", // Added slug field for proper routing
-      name: "Creatina Monohidratada 300g",
-      price: "R$ 89,90",
-      originalPrice: "R$ 119,90",
-      image: "/flora-vitalis-creatine.jpeg",
-      rating: 4.8,
-      reviews: 234,
-    },
-    {
-      id: 2,
-      slug: "creatina-creapure-500g", // Added slug field to match product detail page
-      name: "Creatina Creapure 250g",
-      price: "R$ 129,90",
-      originalPrice: "R$ 159,90",
-      image: "/flora-vitalis-creatine.jpeg",
-      rating: 4.9,
-      reviews: 156,
-    },
-    {
-      id: 3,
-      slug: "creatina-hcl-200g", // Added slug field
-      name: "Creatina HCL 200g",
-      price: "R$ 149,90",
-      originalPrice: "R$ 189,90",
-      image: "/flora-vitalis-creatine.jpeg",
-      rating: 4.7,
-      reviews: 89,
-    },
-  ]
+    const featured = mockDatabase.products
+      .filter((product) => product.featured && product.status === "active")
+      .slice(0, 3)
+    setFeaturedProducts(featured)
+  }, [])
 
   return (
     <div className="min-h-screen bg-background">
@@ -172,47 +147,61 @@ export default function HomePage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {featuredProducts.map((product) => (
-              <div
-                key={product.id}
-                className="bg-card rounded-lg border border-border overflow-hidden hover:shadow-lg transition-shadow"
-              >
-                <div className="aspect-square relative">
-                  <img
-                    src={product.image || "/placeholder.svg"}
-                    alt={product.name}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute top-4 right-4 bg-primary text-primary-foreground px-2 py-1 rounded text-sm font-semibold">
-                    -25%
+            {featuredProducts.map((product) => {
+              const discountPercentage = product.comparePrice
+                ? Math.round(((product.comparePrice - product.price) / product.comparePrice) * 100)
+                : 0
+
+              return (
+                <div
+                  key={product.id}
+                  className="bg-card rounded-lg border border-border overflow-hidden hover:shadow-lg transition-shadow"
+                >
+                  <div className="aspect-square relative">
+                    <img
+                      src={product.images[0]?.url || "/placeholder.svg"}
+                      alt={product.images[0]?.alt || product.name}
+                      className="w-full h-full object-cover"
+                    />
+                    {discountPercentage > 0 && (
+                      <div className="absolute top-4 right-4 bg-primary text-primary-foreground px-2 py-1 rounded text-sm font-semibold">
+                        -{discountPercentage}%
+                      </div>
+                    )}
                   </div>
-                </div>
-                <div className="p-6 space-y-4">
-                  <h3 className="font-heading font-semibold text-card-foreground">{product.name}</h3>
-                  <div className="flex items-center space-x-2">
-                    <div className="flex items-center">
-                      {[...Array(5)].map((_, i) => (
-                        <Star
-                          key={i}
-                          className={`w-4 h-4 ${i < Math.floor(product.rating) ? "text-yellow-400 fill-current" : "text-gray-300"}`}
-                        />
-                      ))}
+                  <div className="p-6 space-y-4">
+                    <h3 className="font-heading font-semibold text-card-foreground">{product.name}</h3>
+                    <div className="flex items-center space-x-2">
+                      <div className="flex items-center">
+                        {[...Array(5)].map((_, i) => (
+                          <Star
+                            key={i}
+                            className={`w-4 h-4 ${i < 4 ? "text-yellow-400 fill-current" : "text-gray-300"}`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-sm text-muted-foreground">(4.8)</span>
                     </div>
-                    <span className="text-sm text-muted-foreground">({product.reviews})</span>
+                    <div className="flex items-center space-x-2">
+                      <span className="font-bold text-lg text-primary">
+                        R$ {product.price.toFixed(2).replace(".", ",")}
+                      </span>
+                      {product.comparePrice && (
+                        <span className="text-sm text-muted-foreground line-through">
+                          R$ {product.comparePrice.toFixed(2).replace(".", ",")}
+                        </span>
+                      )}
+                    </div>
+                    <Link
+                      href={`/produtos/${product.slug}`}
+                      className="w-full bg-primary text-primary-foreground py-2 rounded-lg font-semibold hover:bg-primary/90 transition-colors inline-flex items-center justify-center"
+                    >
+                      Ver Produto
+                    </Link>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <span className="font-bold text-lg text-primary">{product.price}</span>
-                    <span className="text-sm text-muted-foreground line-through">{product.originalPrice}</span>
-                  </div>
-                  <Link
-                    href={`/produtos/${product.slug}`} // Fixed route to use correct path and slug
-                    className="w-full bg-primary text-primary-foreground py-2 rounded-lg font-semibold hover:bg-primary/90 transition-colors inline-flex items-center justify-center"
-                  >
-                    Ver Produto
-                  </Link>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
 
           <div className="text-center mt-12">
@@ -234,7 +223,7 @@ export default function HomePage() {
             Pronto para Potencializar seus Treinos?
           </h2>
           <p className="text-primary-foreground/90 text-lg">
-            Junte-se a milhares de atletas que já confiam na CreatinaMax
+            Junte-se a milhares de atletas que já confiam na Flora Vitalis
           </p>
           <Link
             href="/produtos"
@@ -247,32 +236,6 @@ export default function HomePage() {
       </section>
 
       <Footer />
-
-      <style jsx>{`
-        .animate-fade-in {
-          opacity: 1 !important;
-        }
-        
-        .animate-slide-up {
-          transform: translateY(0) !important;
-        }
-        
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-        
-        @keyframes slideUp {
-          from { 
-            opacity: 0;
-            transform: translateY(30px);
-          }
-          to { 
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      `}</style>
     </div>
   )
 }

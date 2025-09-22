@@ -1,10 +1,9 @@
 "use client"
 
 import type React from "react"
-
 import { useState } from "react"
 import { useRouter } from "next/navigation"
-import { useAuth } from "@/lib/auth/auth-context"
+import { useEnhancedAuth } from "@/lib/auth/enhanced-auth-context"
 import { Lock, User, Eye, EyeOff } from "lucide-react"
 
 export default function AdminLoginPage() {
@@ -13,7 +12,7 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const { login } = useAuth()
+  const { login } = useEnhancedAuth()
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -22,10 +21,14 @@ export default function AdminLoginPage() {
     setIsLoading(true)
 
     try {
-      await login(email, password)
-      router.push("/admin")
+      const result = await login(email, password)
+      if (result.success) {
+        router.push("/admin")
+      } else {
+        setError(result.error || "Erro ao fazer login")
+      }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erro ao fazer login")
+      setError("Erro interno do servidor")
     } finally {
       setIsLoading(false)
     }
@@ -37,10 +40,10 @@ export default function AdminLoginPage() {
         <div className="text-center">
           <div className="flex justify-center">
             <div className="w-16 h-16 bg-primary rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-2xl">C</span>
+              <span className="text-primary-foreground font-bold text-2xl">FV</span>
             </div>
           </div>
-          <h2 className="mt-6 font-heading font-bold text-3xl text-foreground">Admin CreatinaMax</h2>
+          <h2 className="mt-6 font-heading font-bold text-3xl text-foreground">Admin Flora Vitalis</h2>
           <p className="mt-2 text-muted-foreground">Faça login para acessar o painel administrativo</p>
         </div>
 
@@ -119,12 +122,17 @@ export default function AdminLoginPage() {
           <div className="text-center">
             <div className="text-sm text-muted-foreground">
               <p className="mb-2">Credenciais de demonstração:</p>
-              <p>
-                <strong>Admin:</strong> admin@creatinamax.com.br / admin123
-              </p>
-              <p>
-                <strong>Editor:</strong> editor@creatinamax.com.br / editor123
-              </p>
+              <div className="space-y-1">
+                <p>
+                  <strong>Admin:</strong> admin@floravitalis.com.br / admin123
+                </p>
+                <p>
+                  <strong>Gerente:</strong> gerente@floravitalis.com.br / gerente123
+                </p>
+                <p>
+                  <strong>Operador:</strong> operador@floravitalis.com.br / operador123
+                </p>
+              </div>
             </div>
           </div>
         </form>

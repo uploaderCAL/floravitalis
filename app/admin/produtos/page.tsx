@@ -1,116 +1,139 @@
 "use client"
 
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import AdminLayout from "@/components/admin/admin-layout"
-import { Plus, Search, Filter, Edit, Trash2, Eye } from "lucide-react"
+import { Plus, Search, Edit, Trash2, Eye, AlertCircle } from "lucide-react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-
-interface Product {
-  id: number
-  name: string
-  category: string
-  price: number
-  stock: number
-  status: "active" | "inactive"
-  image: string
-  description?: string
-  weight?: string
-}
+import { MockDatabase, type Product } from "@/lib/data/mock-database"
+import { ProductCategory, ProductStatus } from "@/lib/types/database"
+import Link from "next/link"
 
 interface ProductFormData {
   name: string
-  category: string
-  price: string
-  stock: string
-  status: "active" | "inactive"
-  image: string
+  slug: string
   description: string
+  shortDescription: string
+  sku: string
+  category: ProductCategory
+  subcategory: string
+  brand: string
+  price: string
+  comparePrice: string
+  costPrice: string
   weight: string
+  dimensions: {
+    length: string
+    width: string
+    height: string
+  }
+  status: ProductStatus
+  featured: boolean
+  seoTitle: string
+  seoDescription: string
 }
 
 export default function AdminProductsPage() {
-  const [products, setProducts] = useState<Product[]>([
-    {
-      id: 1,
-      name: "Creatina Monohidratada 300g",
-      category: "Monohidratada",
-      price: 89.9,
-      stock: 45,
-      status: "active",
-      image: "/flora-vitalis-creatine.jpeg",
-      description: "Creatina monohidratada pura de alta qualidade",
-      weight: "300g",
-    },
-    {
-      id: 2,
-      name: "Creatina Creapure 250g",
-      category: "Premium",
-      price: 129.9,
-      stock: 32,
-      status: "active",
-      image: "/placeholder-8gu55.png",
-    },
-    {
-      id: 3,
-      name: "Creatina HCL 200g",
-      category: "HCL",
-      price: 149.9,
-      stock: 28,
-      status: "active",
-      image: "/placeholder-dtgw2.png",
-    },
-    {
-      id: 4,
-      name: "Creatina Alcalina 250g",
-      category: "Alcalina",
-      price: 139.9,
-      stock: 0,
-      status: "inactive",
-      image: "/placeholder-nnjl8.png",
-    },
-  ])
-
+  const [products, setProducts] = useState<Product[]>([])
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState("all")
+  const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  const [selectedStatus, setSelectedStatus] = useState<string>("all")
+  const [isLoading, setIsLoading] = useState(true)
 
   const [isDialogOpen, setIsDialogOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [formData, setFormData] = useState<ProductFormData>({
     name: "",
-    category: "",
-    price: "",
-    stock: "",
-    status: "active",
-    image: "",
+    slug: "",
     description: "",
+    shortDescription: "",
+    sku: "",
+    category: ProductCategory.CREATINE,
+    subcategory: "",
+    brand: "Flora Vitalis",
+    price: "",
+    comparePrice: "",
+    costPrice: "",
     weight: "",
+    dimensions: {
+      length: "",
+      width: "",
+      height: "",
+    },
+    status: ProductStatus.ACTIVE,
+    featured: false,
+    seoTitle: "",
+    seoDescription: "",
   })
 
-  const categories = ["all", "Monohidratada", "Premium", "HCL", "Alcalina", "Micronizada", "Combo"]
+  useEffect(() => {
+    setProducts(MockDatabase.products)
+    setIsLoading(false)
+  }, [])
+
+  const categories = Object.values(ProductCategory)
+  const statuses = Object.values(ProductStatus)
 
   const filteredProducts = products.filter((product) => {
-    const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesSearch =
+      product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      product.sku.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesCategory = selectedCategory === "all" || product.category === selectedCategory
-    return matchesSearch && matchesCategory
+    const matchesStatus = selectedStatus === "all" || product.status === selectedStatus
+    return matchesSearch && matchesCategory && matchesStatus
   })
+
+  const generateSlug = (name: string) => {
+    return name
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-z0-9\s-]/g, "")
+      .replace(/\s+/g, "-")
+      .replace(/-+/g, "-")
+      .trim()
+  }
+
+  const generateSKU = (name: string, category: ProductCategory) => {
+    const categoryCode = category.toUpperCase().substring(0, 4)
+    const nameCode = name
+      .toUpperCase()
+      .replace(/[^A-Z0-9]/g, "")
+      .substring(0, 4)
+    const randomNum = Math.floor(Math.random() * 1000)
+      .toString()
+      .padStart(3, "0")
+    return `FV-${categoryCode}-${nameCode}-${randomNum}`
+  }
 
   const handleNewProduct = () => {
     setEditingProduct(null)
     setFormData({
       name: "",
-      category: "",
-      price: "",
-      stock: "",
-      status: "active",
-      image: "",
+      slug: "",
       description: "",
+      shortDescription: "",
+      sku: "",
+      category: ProductCategory.CREATINE,
+      subcategory: "",
+      brand: "Flora Vitalis",
+      price: "",
+      comparePrice: "",
+      costPrice: "",
       weight: "",
+      dimensions: {
+        length: "",
+        width: "",
+        height: "",
+      },
+      status: ProductStatus.ACTIVE,
+      featured: false,
+      seoTitle: "",
+      seoDescription: "",
     })
     setIsDialogOpen(true)
   }
@@ -119,13 +142,26 @@ export default function AdminProductsPage() {
     setEditingProduct(product)
     setFormData({
       name: product.name,
+      slug: product.slug,
+      description: product.description,
+      shortDescription: product.shortDescription || "",
+      sku: product.sku,
       category: product.category,
+      subcategory: product.subcategory || "",
+      brand: product.brand,
       price: product.price.toString(),
-      stock: product.stock.toString(),
+      comparePrice: product.comparePrice?.toString() || "",
+      costPrice: product.costPrice.toString(),
+      weight: product.weight.toString(),
+      dimensions: {
+        length: product.dimensions.length.toString(),
+        width: product.dimensions.width.toString(),
+        height: product.dimensions.height.toString(),
+      },
       status: product.status,
-      image: product.image,
-      description: product.description || "",
-      weight: product.weight || "",
+      featured: product.featured,
+      seoTitle: product.seoTitle || "",
+      seoDescription: product.seoDescription || "",
     })
     setIsDialogOpen(true)
   }
@@ -133,33 +169,112 @@ export default function AdminProductsPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
 
+    const slug = formData.slug || generateSlug(formData.name)
+    const sku = formData.sku || generateSKU(formData.name, formData.category)
+
     const productData: Product = {
-      id: editingProduct ? editingProduct.id : Date.now(),
+      id: editingProduct ? editingProduct.id : (products.length + 1).toString(),
       name: formData.name,
-      category: formData.category,
-      price: Number.parseFloat(formData.price),
-      stock: Number.parseInt(formData.stock),
-      status: formData.status,
-      image: formData.image || "/flora-vitalis-creatine.jpeg",
+      slug,
       description: formData.description,
-      weight: formData.weight,
+      shortDescription: formData.shortDescription,
+      sku,
+      category: formData.category,
+      subcategory: formData.subcategory,
+      brand: formData.brand,
+      price: Number.parseFloat(formData.price),
+      comparePrice: formData.comparePrice ? Number.parseFloat(formData.comparePrice) : undefined,
+      costPrice: Number.parseFloat(formData.costPrice),
+      weight: Number.parseFloat(formData.weight),
+      dimensions: {
+        length: Number.parseFloat(formData.dimensions.length),
+        width: Number.parseFloat(formData.dimensions.width),
+        height: Number.parseFloat(formData.dimensions.height),
+      },
+      images: editingProduct?.images || [
+        {
+          id: "1",
+          productId: editingProduct ? editingProduct.id : (products.length + 1).toString(),
+          url: "/flora-vitalis-creatine.jpeg",
+          alt: formData.name,
+          order: 1,
+          isPrimary: true,
+        },
+      ],
+      specifications: editingProduct?.specifications || [],
+      status: formData.status,
+      featured: formData.featured,
+      seoTitle: formData.seoTitle,
+      seoDescription: formData.seoDescription,
+      createdAt: editingProduct?.createdAt || new Date(),
+      updatedAt: new Date(),
+      batches: editingProduct?.batches || [],
     }
 
     if (editingProduct) {
       // Update existing product
-      setProducts(products.map((p) => (p.id === editingProduct.id ? productData : p)))
+      const updatedProducts = products.map((p) => (p.id === editingProduct.id ? productData : p))
+      setProducts(updatedProducts)
+      MockDatabase.products = updatedProducts
     } else {
       // Add new product
-      setProducts([...products, productData])
+      const updatedProducts = [...products, productData]
+      setProducts(updatedProducts)
+      MockDatabase.products = updatedProducts
     }
 
     setIsDialogOpen(false)
   }
 
-  const handleDeleteProduct = (id: number) => {
+  const handleDeleteProduct = (id: string) => {
     if (confirm("Tem certeza que deseja excluir este produto?")) {
-      setProducts(products.filter((p) => p.id !== id))
+      const updatedProducts = products.filter((p) => p.id !== id)
+      setProducts(updatedProducts)
+      MockDatabase.products = updatedProducts
     }
+  }
+
+  const getStatusColor = (status: ProductStatus) => {
+    switch (status) {
+      case ProductStatus.ACTIVE:
+        return "bg-green-100 text-green-800"
+      case ProductStatus.INACTIVE:
+        return "bg-gray-100 text-gray-800"
+      case ProductStatus.OUT_OF_STOCK:
+        return "bg-red-100 text-red-800"
+      case ProductStatus.DISCONTINUED:
+        return "bg-orange-100 text-orange-800"
+      default:
+        return "bg-gray-100 text-gray-800"
+    }
+  }
+
+  const getStatusText = (status: ProductStatus) => {
+    switch (status) {
+      case ProductStatus.ACTIVE:
+        return "Ativo"
+      case ProductStatus.INACTIVE:
+        return "Inativo"
+      case ProductStatus.OUT_OF_STOCK:
+        return "Sem Estoque"
+      case ProductStatus.DISCONTINUED:
+        return "Descontinuado"
+      default:
+        return status
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-2 text-muted-foreground">Carregando produtos...</p>
+          </div>
+        </div>
+      </AdminLayout>
+    )
   }
 
   return (
@@ -169,7 +284,7 @@ export default function AdminProductsPage() {
         <div className="flex items-center justify-between">
           <div>
             <h1 className="font-heading font-bold text-2xl text-foreground">Produtos</h1>
-            <p className="text-muted-foreground">Gerencie seu catálogo de produtos</p>
+            <p className="text-muted-foreground">Gerencie seu catálogo de produtos Flora Vitalis</p>
           </div>
           <Button onClick={handleNewProduct} className="flex items-center">
             <Plus className="w-4 h-4 mr-2" />
@@ -185,7 +300,7 @@ export default function AdminProductsPage() {
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
                 <input
                   type="text"
-                  placeholder="Buscar produtos..."
+                  placeholder="Buscar produtos por nome ou SKU..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10 w-full px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
@@ -199,16 +314,24 @@ export default function AdminProductsPage() {
                 className="px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
               >
                 <option value="all">Todas as categorias</option>
-                {categories.slice(1).map((category) => (
+                {categories.map((category) => (
                   <option key={category} value={category}>
-                    {category}
+                    {category.charAt(0).toUpperCase() + category.slice(1).replace("_", " ")}
                   </option>
                 ))}
               </select>
-              <button className="px-4 py-2 border border-border rounded-lg bg-background text-foreground hover:bg-accent transition-colors flex items-center">
-                <Filter className="w-4 h-4 mr-2" />
-                Filtros
-              </button>
+              <select
+                value={selectedStatus}
+                onChange={(e) => setSelectedStatus(e.target.value)}
+                className="px-4 py-2 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent"
+              >
+                <option value="all">Todos os status</option>
+                {statuses.map((status) => (
+                  <option key={status} value={status}>
+                    {getStatusText(status)}
+                  </option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
@@ -220,6 +343,7 @@ export default function AdminProductsPage() {
               <thead className="bg-muted">
                 <tr>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Produto</th>
+                  <th className="text-left py-3 px-4 font-medium text-muted-foreground">SKU</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Categoria</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Preço</th>
                   <th className="text-left py-3 px-4 font-medium text-muted-foreground">Estoque</th>
@@ -228,68 +352,92 @@ export default function AdminProductsPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredProducts.map((product) => (
-                  <tr key={product.id} className="border-t border-border">
-                    <td className="py-4 px-4">
-                      <div className="flex items-center space-x-3">
-                        <img
-                          src={product.image || "/placeholder.svg"}
-                          alt={product.name}
-                          className="w-12 h-12 rounded-lg object-cover"
-                        />
-                        <div>
-                          <p className="font-medium text-card-foreground">{product.name}</p>
-                          <p className="text-sm text-muted-foreground">ID: {product.id}</p>
+                {filteredProducts.map((product) => {
+                  const stock = MockDatabase.getAvailableStock(product.id)
+                  const primaryImage = product.images.find((img) => img.isPrimary) || product.images[0]
+
+                  return (
+                    <tr key={product.id} className="border-t border-border">
+                      <td className="py-4 px-4">
+                        <div className="flex items-center space-x-3">
+                          <img
+                            src={primaryImage?.url || "/placeholder.svg"}
+                            alt={product.name}
+                            className="w-12 h-12 rounded-lg object-cover"
+                          />
+                          <div>
+                            <p className="font-medium text-card-foreground">{product.name}</p>
+                            <p className="text-sm text-muted-foreground">{product.brand}</p>
+                            {product.featured && (
+                              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-yellow-100 text-yellow-800">
+                                Destaque
+                              </span>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="py-4 px-4">
-                      <span className="px-2 py-1 bg-secondary/10 text-secondary rounded-full text-sm">
-                        {product.category}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4">
-                      <span className="font-medium text-card-foreground">R$ {product.price.toFixed(2)}</span>
-                    </td>
-                    <td className="py-4 px-4">
-                      <span
-                        className={`font-medium ${
-                          product.stock > 10 ? "text-green-600" : product.stock > 0 ? "text-yellow-600" : "text-red-600"
-                        }`}
-                      >
-                        {product.stock}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4">
-                      <span
-                        className={`px-2 py-1 rounded-full text-sm ${
-                          product.status === "active" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"
-                        }`}
-                      >
-                        {product.status === "active" ? "Ativo" : "Inativo"}
-                      </span>
-                    </td>
-                    <td className="py-4 px-4">
-                      <div className="flex items-center space-x-2">
-                        <button className="p-2 text-muted-foreground hover:text-primary transition-colors">
-                          <Eye className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleEditProduct(product)}
-                          className="p-2 text-muted-foreground hover:text-primary transition-colors"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteProduct(product.id)}
-                          className="p-2 text-muted-foreground hover:text-destructive transition-colors"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className="font-mono text-sm text-card-foreground">{product.sku}</span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className="px-2 py-1 bg-secondary/10 text-secondary rounded-full text-sm">
+                          {product.category.charAt(0).toUpperCase() + product.category.slice(1).replace("_", " ")}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div>
+                          <span className="font-medium text-card-foreground">
+                            R$ {product.price.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                          </span>
+                          {product.comparePrice && (
+                            <p className="text-sm text-muted-foreground line-through">
+                              R$ {product.comparePrice.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}
+                            </p>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center space-x-2">
+                          <span
+                            className={`font-medium ${
+                              stock > 20 ? "text-green-600" : stock > 5 ? "text-yellow-600" : "text-red-600"
+                            }`}
+                          >
+                            {stock}
+                          </span>
+                          {stock <= 5 && <AlertCircle className="w-4 h-4 text-red-500" />}
+                        </div>
+                      </td>
+                      <td className="py-4 px-4">
+                        <span className={`px-2 py-1 rounded-full text-sm ${getStatusColor(product.status)}`}>
+                          {getStatusText(product.status)}
+                        </span>
+                      </td>
+                      <td className="py-4 px-4">
+                        <div className="flex items-center space-x-2">
+                          <Link
+                            href={`/produtos/${product.slug}`}
+                            className="p-2 text-muted-foreground hover:text-primary transition-colors"
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Link>
+                          <button
+                            onClick={() => handleEditProduct(product)}
+                            className="p-2 text-muted-foreground hover:text-primary transition-colors"
+                          >
+                            <Edit className="w-4 h-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteProduct(product.id)}
+                            className="p-2 text-muted-foreground hover:text-destructive transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
@@ -306,120 +454,281 @@ export default function AdminProductsPage() {
             </button>
             <button className="px-3 py-2 bg-primary text-primary-foreground rounded-lg text-sm">1</button>
             <button className="px-3 py-2 border border-border rounded-lg text-sm hover:bg-accent transition-colors">
-              2
-            </button>
-            <button className="px-3 py-2 border border-border rounded-lg text-sm hover:bg-accent transition-colors">
               Próximo
             </button>
           </div>
         </div>
 
+        {/* Product Form Dialog */}
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>{editingProduct ? "Editar Produto" : "Novo Produto"}</DialogTitle>
             </DialogHeader>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Basic Information */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">Informações Básicas</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Nome do Produto *</label>
+                    <Input
+                      value={formData.name}
+                      onChange={(e) => {
+                        const name = e.target.value
+                        setFormData({
+                          ...formData,
+                          name,
+                          slug: generateSlug(name),
+                          seoTitle: name + " - Flora Vitalis",
+                        })
+                      }}
+                      placeholder="Ex: Creatina Monohidratada 300g"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Slug (URL)</label>
+                    <Input
+                      value={formData.slug}
+                      onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                      placeholder="creatina-monohidratada-300g"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">SKU</label>
+                    <Input
+                      value={formData.sku}
+                      onChange={(e) => setFormData({ ...formData, sku: e.target.value })}
+                      placeholder="FV-CREAT-MONO-300"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Marca</label>
+                    <Input
+                      value={formData.brand}
+                      onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                      placeholder="Flora Vitalis"
+                    />
+                  </div>
+                </div>
+
                 <div>
-                  <label className="block text-sm font-medium mb-2">Nome do Produto</label>
+                  <label className="block text-sm font-medium mb-2">Descrição Curta</label>
                   <Input
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="Ex: Creatina Monohidratada 300g"
-                    required
+                    value={formData.shortDescription}
+                    onChange={(e) => setFormData({ ...formData, shortDescription: e.target.value })}
+                    placeholder="Creatina pura para máxima performance"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-2">Categoria</label>
-                  <Select
-                    value={formData.category}
-                    onValueChange={(value) => setFormData({ ...formData, category: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecione uma categoria" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {categories.slice(1).map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">Preço (R$)</label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    placeholder="89.90"
-                    required
+                  <label className="block text-sm font-medium mb-2">Descrição Completa</label>
+                  <Textarea
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    placeholder="Descrição detalhada do produto..."
+                    rows={4}
                   />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">Estoque</label>
-                  <Input
-                    type="number"
-                    value={formData.stock}
-                    onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                    placeholder="45"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">Peso</label>
-                  <Input
-                    value={formData.weight}
-                    onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
-                    placeholder="300g"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium mb-2">Status</label>
-                  <Select
-                    value={formData.status}
-                    onValueChange={(value: "active" | "inactive") => setFormData({ ...formData, status: value })}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Ativo</SelectItem>
-                      <SelectItem value="inactive">Inativo</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">URL da Imagem</label>
-                <Input
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  placeholder="/flora-vitalis-creatine.jpeg"
-                />
+              {/* Category and Pricing */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">Categoria e Preços</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Categoria *</label>
+                    <Select
+                      value={formData.category}
+                      onValueChange={(value: ProductCategory) => setFormData({ ...formData, category: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {categories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category.charAt(0).toUpperCase() + category.slice(1).replace("_", " ")}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Subcategoria</label>
+                    <Input
+                      value={formData.subcategory}
+                      onChange={(e) => setFormData({ ...formData, subcategory: e.target.value })}
+                      placeholder="Monohidratada, Creapure, etc."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Preço de Venda (R$) *</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={formData.price}
+                      onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                      placeholder="89.90"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Preço Comparativo (R$)</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={formData.comparePrice}
+                      onChange={(e) => setFormData({ ...formData, comparePrice: e.target.value })}
+                      placeholder="119.90"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Preço de Custo (R$) *</label>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      value={formData.costPrice}
+                      onChange={(e) => setFormData({ ...formData, costPrice: e.target.value })}
+                      placeholder="45.00"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Status</label>
+                    <Select
+                      value={formData.status}
+                      onValueChange={(value: ProductStatus) => setFormData({ ...formData, status: value })}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {statuses.map((status) => (
+                          <SelectItem key={status} value={status}>
+                            {getStatusText(status)}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium mb-2">Descrição</label>
-                <Textarea
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Descrição detalhada do produto..."
-                  rows={3}
-                />
+              {/* Physical Properties */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">Propriedades Físicas</h3>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Peso (g) *</label>
+                    <Input
+                      type="number"
+                      value={formData.weight}
+                      onChange={(e) => setFormData({ ...formData, weight: e.target.value })}
+                      placeholder="300"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Comprimento (cm)</label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={formData.dimensions.length}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          dimensions: { ...formData.dimensions, length: e.target.value },
+                        })
+                      }
+                      placeholder="10"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Largura (cm)</label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={formData.dimensions.width}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          dimensions: { ...formData.dimensions, width: e.target.value },
+                        })
+                      }
+                      placeholder="10"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Altura (cm)</label>
+                    <Input
+                      type="number"
+                      step="0.1"
+                      value={formData.dimensions.height}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          dimensions: { ...formData.dimensions, height: e.target.value },
+                        })
+                      }
+                      placeholder="12"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className="flex justify-end space-x-2 pt-4">
+              {/* SEO and Marketing */}
+              <div className="space-y-4">
+                <h3 className="font-semibold text-lg">SEO e Marketing</h3>
+                <div className="space-y-4">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id="featured"
+                      checked={formData.featured}
+                      onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                      className="rounded border-border"
+                    />
+                    <label htmlFor="featured" className="text-sm font-medium">
+                      Produto em destaque
+                    </label>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Título SEO</label>
+                    <Input
+                      value={formData.seoTitle}
+                      onChange={(e) => setFormData({ ...formData, seoTitle: e.target.value })}
+                      placeholder="Creatina Monohidratada 300g - Flora Vitalis"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Descrição SEO</label>
+                    <Textarea
+                      value={formData.seoDescription}
+                      onChange={(e) => setFormData({ ...formData, seoDescription: e.target.value })}
+                      placeholder="Compre Creatina Monohidratada 300g Flora Vitalis. Produto de alta qualidade..."
+                      rows={2}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex justify-end space-x-2 pt-4 border-t">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Cancelar
                 </Button>
